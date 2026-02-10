@@ -15,7 +15,6 @@
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
       background: linear-gradient(135deg, #ffe6ef, #fff);
     }
-
     .card{
       background:#fff;
       padding:40px 30px;
@@ -24,27 +23,19 @@
       box-shadow:0 20px 50px rgba(0,0,0,0.10);
       width:min(650px,92%);
     }
+    h1{ font-size:36px; margin:0 0 12px; }
+    p{ color:#555; margin:0 0 20px; }
 
-    h1{
-      font-size:36px;
-      margin:0 0 12px;
-    }
-
-    p{
-      color:#555;
-      margin:0 0 26px;
-    }
-
-    /* Interaction area */
+    /* White interaction box */
     .play{
       position:relative;
       width:min(520px,100%);
-      height:140px;
+      height:170px;
       margin:0 auto;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      cursor:pointer;
+      border-radius:18px;
+      /* This makes iPhone touch tracking work */
+      touch-action: none;
+      user-select:none;
     }
 
     #yes{
@@ -57,13 +48,15 @@
       font-weight:700;
       cursor:pointer;
       position:absolute;
-      z-index:2;
+      left:50%;
+      top:50%;
+      transform:translate(-50%,-50%) scale(1);
       box-shadow:0 14px 30px rgba(255,77,141,0.35);
-      transition: transform 0.15s ease;
+      transition: transform 0.12s ease;
+      z-index:2;
       user-select:none;
     }
 
-    /* Small shy NO */
     #no{
       position:absolute;
       background:transparent;
@@ -72,9 +65,9 @@
       font-size:13px;
       font-weight:600;
       padding:2px 6px;
+      pointer-events:none; /* never clickable */
       z-index:1;
       user-select:none;
-      pointer-events:none; /* never clickable */
     }
 
     .msg{
@@ -84,6 +77,9 @@
       line-height:1.35;
       min-height:40px;
     }
+
+    /* Debug label so you KNOW you’re seeing the latest code */
+    .ver{ margin-top:10px; font-size:12px; color:#888; opacity:.75; }
   </style>
 </head>
 
@@ -98,6 +94,7 @@
     </div>
 
     <div class="msg" id="msg"></div>
+    <div class="ver">Version: FIX-CLICK-MOVE ✅</div>
   </div>
 
   <script>
@@ -108,30 +105,92 @@
 
     let accepted = false;
 
-    /* YES follows mouse + grows slightly */
-    play.addEventListener("mousemove", (e) => {
+    function acceptYes(){
+      if (accepted) return;
+      accepted = true;
+
+      msg.innerHTML = `
+        Gurleen,<br>
+        I care about you more than I can put into words,<br>
+        and I’m really grateful for you 🤍🥹<br><br>
+        <strong>Choose carefully:</strong><br>
+        Skinny Gurleen, Poo Bear 😉
+      `;
+
+      yesBtn.style.display = "none";
+      noBtn.style.display  = "none";
+    }
+
+    // Keep YES inside the white box (clamped)
+    function moveYes(clientX, clientY){
       if (accepted) return;
 
-      const rect = play.getBoundingClientRect();
-      const x = e.clientX - rect.left - yesBtn.offsetWidth / 2;
-      const y = e.clientY - rect.top  - yesBtn.offsetHeight / 2;
+      const r = play.getBoundingClientRect();
+      const w = yesBtn.offsetWidth;
+      const h = yesBtn.offsetHeight;
+
+      let x = clientX - r.left - w/2;
+      let y = clientY - r.top  - h/2;
+
+      const pad = 6;
+      x = Math.max(pad, Math.min(x, r.width  - w - pad));
+      y = Math.max(pad, Math.min(y, r.height - h - pad));
 
       yesBtn.style.left = x + "px";
       yesBtn.style.top  = y + "px";
       yesBtn.style.transform = "scale(1.08)";
-    });
+    }
 
+    // Desktop: follow mouse
+    play.addEventListener("mousemove", (e) => moveYes(e.clientX, e.clientY));
     play.addEventListener("mouseleave", () => {
-      if (accepted) return;
-      yesBtn.style.transform = "scale(1)";
+      if (!accepted) yesBtn.style.transform = "scale(1)";
     });
 
-    /* Place NO near YES (visual only) */
-    function placeNoNearYes(){
+    // iPhone/Android: follow finger while dragging
+    play.addEventListener("touchmove", (e) => {
+      if (accepted) return;
+      e.preventDefault();
+      const t = e.touches[0];
+      moveYes(t.clientX, t.clientY);
+    }, { passive:false });
+
+    play.addEventListener("touchend", () => {
+      if (!accepted) yesBtn.style.transform = "scale(1)";
+    });
+
+    // YES must always work
+    yesBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      acceptYes();
+    });
+    yesBtn.addEventListener("touchstart", (e) => {
+      // Some iPhone contexts need touchstart to trigger reliably
+      e.preventDefault();
+      acceptYes();
+    }, { passive:false });
+
+    // NO floats near YES (visual only)
+    function placeNo(){
       if (accepted) return;
 
-      const playRect = play.getBoundingClientRect();
-      const yesRect  = yesBtn.getBoundingClientRect();
+      const pr = play.getBoundingClientRect();
+      const yr = yesBtn.getBoundingClientRect();
 
-      const cx = (yesRect.left + yesRect.width/2) - playRect.left;
-      const cy = (yes
+      const cx = (yr.left - pr.left) + yr.width/2;
+      const cy = (yr.top  - pr.top)  + yr.height/2;
+
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 26 + Math.random() * 18; // small near-yes movement
+      const x = cx + Math.cos(angle)*dist;
+      const y = cy + Math.sin(angle)*dist;
+
+      noBtn.style.left = x + "px";
+      noBtn.style.top  = y + "px";
+    }
+
+    setInterval(placeNo, 500);
+    setTimeout(placeNo, 80);
+  </script>
+</body>
+</html>
