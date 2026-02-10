@@ -4,19 +4,38 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Valentine?</title>
+
   <style>
     body{
-      margin:0;height:100vh;display:flex;align-items:center;justify-content:center;
-      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-      background:linear-gradient(135deg,#ffe6ef,#fff);
+      margin:0;
+      height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: linear-gradient(135deg, #ffe6ef, #fff);
     }
-    .card{
-      background:#fff;padding:40px 30px;border-radius:20px;text-align:center;
-      box-shadow:0 20px 50px rgba(0,0,0,0.10); width:min(650px,92%);
-    }
-    h1{font-size:36px;margin:0 0 12px;}
-    p{color:#555;margin:0 0 22px;}
 
+    .card{
+      background:#fff;
+      padding:40px 30px;
+      border-radius:20px;
+      text-align:center;
+      box-shadow:0 20px 50px rgba(0,0,0,0.10);
+      width:min(650px,92%);
+    }
+
+    h1{
+      font-size:36px;
+      margin:0 0 12px;
+    }
+
+    p{
+      color:#555;
+      margin:0 0 26px;
+    }
+
+    /* Interaction area */
     .play{
       position:relative;
       width:min(520px,100%);
@@ -25,22 +44,49 @@
       display:flex;
       align-items:center;
       justify-content:center;
+      cursor:pointer;
     }
+
     #yes{
-      background:#ff4d8d;color:#fff;border:none;border-radius:999px;
-      padding:18px 54px;font-size:26px;font-weight:700;cursor:pointer;
+      background:#ff4d8d;
+      color:#fff;
+      border:none;
+      border-radius:999px;
+      padding:18px 54px;
+      font-size:26px;
+      font-weight:700;
+      cursor:pointer;
+      position:absolute;
+      z-index:2;
       box-shadow:0 14px 30px rgba(255,77,141,0.35);
-      position:relative; z-index:2; user-select:none;
+      transition: transform 0.15s ease;
+      user-select:none;
     }
+
+    /* Small shy NO */
     #no{
       position:absolute;
-      background:transparent;border:none;color:#111;
-      font-size:13px;font-weight:600;cursor:pointer;
-      padding:2px 6px; z-index:3; user-select:none;
+      background:transparent;
+      border:none;
+      color:#111;
+      font-size:13px;
+      font-weight:600;
+      padding:2px 6px;
+      z-index:1;
+      user-select:none;
+      pointer-events:none; /* never clickable */
     }
-    .msg{font-size:20px;color:#ff2f79;margin-top:18px;line-height:1.35;min-height:40px;}
+
+    .msg{
+      font-size:20px;
+      color:#ff2f79;
+      margin-top:18px;
+      line-height:1.35;
+      min-height:40px;
+    }
   </style>
 </head>
+
 <body>
   <div class="card">
     <h1>Gurleen, will you be my Valentine? 💖</h1>
@@ -55,88 +101,37 @@
   </div>
 
   <script>
+    const play = document.getElementById("play");
     const yesBtn = document.getElementById("yes");
     const noBtn  = document.getElementById("no");
-    const play   = document.getElementById("play");
     const msg    = document.getElementById("msg");
 
     let accepted = false;
 
-    // Tight orbit around YES (like TikTok)
-    const MIN_R = 18;
-    const MAX_R = 42;
+    /* YES follows mouse + grows slightly */
+    play.addEventListener("mousemove", (e) => {
+      if (accepted) return;
 
-    // If cursor gets near YES or NO, NO jumps to another nearby spot
-    const TRIGGER_NEAR_YES = 120;
-    const TRIGGER_NEAR_NO  = 90;
+      const rect = play.getBoundingClientRect();
+      const x = e.clientX - rect.left - yesBtn.offsetWidth / 2;
+      const y = e.clientY - rect.top  - yesBtn.offsetHeight / 2;
 
-    function placeNoNearYes() {
+      yesBtn.style.left = x + "px";
+      yesBtn.style.top  = y + "px";
+      yesBtn.style.transform = "scale(1.08)";
+    });
+
+    play.addEventListener("mouseleave", () => {
+      if (accepted) return;
+      yesBtn.style.transform = "scale(1)";
+    });
+
+    /* Place NO near YES (visual only) */
+    function placeNoNearYes(){
       if (accepted) return;
 
       const playRect = play.getBoundingClientRect();
       const yesRect  = yesBtn.getBoundingClientRect();
 
       const cx = (yesRect.left + yesRect.width/2) - playRect.left;
-      const cy = (yesRect.top  + yesRect.height/2) - playRect.top;
-
-      const angle = Math.random() * Math.PI * 2;
-      const r = MIN_R + Math.random() * (MAX_R - MIN_R);
-
-      let x = cx + Math.cos(angle)*r - (noBtn.offsetWidth/2);
-      let y = cy + Math.sin(angle)*r - (noBtn.offsetHeight/2);
-
-      // Clamp inside play box
-      const pad = 8;
-      const maxX = playRect.width  - noBtn.offsetWidth  - pad;
-      const maxY = playRect.height - noBtn.offsetHeight - pad;
-      x = Math.max(pad, Math.min(x, maxX));
-      y = Math.max(pad, Math.min(y, maxY));
-
-      noBtn.style.left = x + "px";
-      noBtn.style.top  = y + "px";
-    }
-
-    function onMove(e){
-      if (accepted) return;
-
-      const yesR = yesBtn.getBoundingClientRect();
-      const yx = yesR.left + yesR.width/2;
-      const yy = yesR.top  + yesR.height/2;
-
-      const noR = noBtn.getBoundingClientRect();
-      const nx = noR.left + noR.width/2;
-      const ny = noR.top  + noR.height/2;
-
-      const dYes = Math.hypot(e.clientX - yx, e.clientY - yy);
-      const dNo  = Math.hypot(e.clientX - nx, e.clientY - ny);
-
-      if (dNo < TRIGGER_NEAR_NO || dYes < TRIGGER_NEAR_YES) {
-        placeNoNearYes();
-      }
-    }
-
-    // Only listen inside the white play area (not whole page)
-    play.addEventListener("mousemove", onMove);
-    noBtn.addEventListener("mouseenter", placeNoNearYes);
-    noBtn.addEventListener("mousedown", (e)=>{ e.preventDefault(); placeNoNearYes(); });
-
-    yesBtn.addEventListener("click", () => {
-      accepted = true;
-
-      msg.innerHTML = `
-        Gurleen,<br>
-        I care about you more than I can put into words,<br>
-        and I’m really grateful for you 🤍🥹<br><br>
-        <strong>Choose carefully:</strong><br>
-        Skinny Gurleen, Poo Bear 😉
-      `;
-
-      yesBtn.style.display = "none";
-      noBtn.style.display  = "none";
-    });
-
-    setTimeout(placeNoNearYes, 60);
-    window.addEventListener("resize", () => setTimeout(placeNoNearYes, 60));
-  </script>
-</body>
-</html>
+      const cy = (yes
