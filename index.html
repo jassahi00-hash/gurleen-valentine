@@ -23,25 +23,21 @@
       border-radius: 20px;
       text-align: center;
       box-shadow: 0 20px 50px rgba(0,0,0,0.1);
-      max-width: 600px;
+      max-width: 650px;
       width: 90%;
+      position: relative;
+      z-index: 1;
     }
 
-    h1 {
-      font-size: 36px;
-      margin-bottom: 10px;
-    }
-
-    p {
-      color: #555;
-      margin-bottom: 25px;
-    }
+    h1 { font-size: 36px; margin-bottom: 10px; }
+    p { color: #555; margin-bottom: 25px; }
 
     .buttons {
       display: flex;
       justify-content: center;
       gap: 15px;
       margin-bottom: 20px;
+      flex-wrap: wrap;
     }
 
     button {
@@ -50,7 +46,7 @@
       border-radius: 999px;
       border: none;
       cursor: pointer;
-      transition: transform 0.15s ease;
+      user-select: none;
     }
 
     #yes {
@@ -61,12 +57,15 @@
     #no {
       background: #eee;
       position: fixed;
+      z-index: 9999;
+      pointer-events: auto;
     }
 
     .msg {
       font-size: 20px;
       color: #ff2f79;
       margin-top: 15px;
+      line-height: 1.35;
     }
   </style>
 </head>
@@ -89,19 +88,32 @@
     const noBtn = document.getElementById("no");
     const msg = document.getElementById("msg");
 
-    function moveNo() {
-      const padding = 20;
-      const maxX = window.innerWidth - noBtn.offsetWidth - padding;
-      const maxY = window.innerHeight - noBtn.offsetHeight - padding;
+    let accepted = false; // stops movement ONLY after Yes
 
-      noBtn.style.left = Math.random() * maxX + "px";
-      noBtn.style.top = Math.random() * maxY + "px";
+    function moveNo() {
+      if (accepted) return;
+
+      const pad = 20;
+      const maxX = window.innerWidth - noBtn.offsetWidth - pad;
+      const maxY = window.innerHeight - noBtn.offsetHeight - pad;
+
+      noBtn.style.left = Math.max(pad, Math.random() * maxX) + "px";
+      noBtn.style.top  = Math.max(pad, Math.random() * maxY) + "px";
     }
 
+    // CONSTANT movement triggers
     window.addEventListener("pointermove", moveNo);
-    noBtn.addEventListener("pointerdown", moveNo);
+    noBtn.addEventListener("pointerenter", moveNo);
+    noBtn.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      moveNo();
+    });
+
+    // Keep nudging it every 700ms so it NEVER settles
+    setInterval(moveNo, 700);
 
     yesBtn.addEventListener("click", () => {
+      accepted = true;
       msg.innerHTML = `
         💕 It’s a YES 💕<br><br>
         Gurleen,<br>
@@ -112,6 +124,9 @@
       `;
       noBtn.style.display = "none";
     });
+
+    // Initial jump
+    moveNo();
   </script>
 </body>
 </html>
